@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 import joblib
 import os
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -20,6 +21,10 @@ def resolve_path(filename):
         )
         st.stop()
     return path
+
+# --------------------------------------------------
+# Page Config
+# --------------------------------------------------
 
 st.set_page_config(
     page_title="Instacart Analytics & Machine Learning System",
@@ -82,12 +87,16 @@ def load_models():
         resolve_path("kmeans_model.pkl")
     )
 
-    return regressor, classifier, kmeans
+    scaler = joblib.load(
+        resolve_path("scaler.pkl")
+    )
+
+    return regressor, classifier, kmeans, scaler
 
 
 kmeans_df = load_kmeans()
 
-regressor_model, classifier_model, kmeans_model = load_models()
+regressor_model, classifier_model, kmeans_model, kmeans_scaler = load_models()
 
 # --------------------------------------------------
 # Sidebar
@@ -143,15 +152,6 @@ Welcome to the end-to-end Data Science Project.
 
 """)
 
-    st.image(
-        "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=1200",
-        use_container_width=True
-    )
-
-# ==========================================================
-# RANDOM FOREST REGRESSOR
-# ==========================================================
-
 elif page == "🤖 Random Forest Regressor":
 
     st.title("🤖 Random Forest Regressor")
@@ -205,9 +205,6 @@ elif page == "🤖 Random Forest Regressor":
             f"Predicted Days Until Next Order: {prediction[0]:.2f} Days"
         )
 
-# ==========================================================
-# RANDOM FOREST CLASSIFIER
-# ==========================================================
 
 elif page == "🛒 Random Forest Classifier":
 
@@ -327,10 +324,6 @@ elif page == "🛒 Random Forest Classifier":
         use_container_width=True
     )
 
-# ==========================================================
-# CUSTOMER SEGMENTATION
-# ==========================================================
-
 elif page == "👥 Customer Segmentation":
 
     st.title("👥 Customer Segmentation")
@@ -339,9 +332,21 @@ elif page == "👥 Customer Segmentation":
 
     st.markdown("---")
 
-    features = kmeans_df.drop(columns=["user_id"])
+    feature_cols = list(kmeans_scaler.feature_names_in_)
 
-    kmeans_df["Cluster"] = kmeans_model.predict(features)
+    missing_cols = set(feature_cols) - set(kmeans_df.columns)
+    if missing_cols:
+        st.error(
+            f"K-means Dataset.csv is missing columns required by the "
+            f"scaler: {missing_cols}"
+        )
+        st.stop()
+
+    features = kmeans_df[feature_cols]
+
+    scaled_features = kmeans_scaler.transform(features)
+
+    kmeans_df["Cluster"] = kmeans_model.predict(scaled_features)
 
     cluster_names = {
         0: "Loyal Customers",
@@ -446,10 +451,6 @@ elif page == "👥 Customer Segmentation":
         else:
 
             st.error("Customer Not Found")
-
-# ==========================================================
-# ABOUT PROJECT
-# ==========================================================
 
 elif page == "📄 About":
 
@@ -580,10 +581,14 @@ st.markdown(
 """
 <div style='text-align:center;'>
 
-Made with ❤️ using
+Made with using
 
 <b>Python | PostgreSQL | SQL | Scikit-Learn | Streamlit</b>
 
+</div>
+""",
+unsafe_allow_html=True
+)
 </div>
 """,
 unsafe_allow_html=True
