@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 import joblib
 
 # --------------------------------------------------
@@ -37,28 +36,19 @@ h1{
 }
 
 </style>
-""",unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # --------------------------------------------------
 # Load Data
 # --------------------------------------------------
+# NOTE: only kmeans_df is kept — it's the source data Segmentation
+# clusters and searches against, not just a preview table.
+# regressor_dataset.csv and classifier_dataset.csv are no longer
+# loaded since they were only used for dataset previews/histograms.
 
 @st.cache_data
 def load_kmeans():
-
     return pd.read_csv("K-means Dataset.csv")
-
-
-@st.cache_data
-def load_regressor():
-
-    return pd.read_csv("regressor_dataset.csv")
-
-
-@st.cache_data
-def load_classifier():
-
-    return pd.read_csv("classifier_dataset.csv")
 
 # --------------------------------------------------
 # Load Models
@@ -67,28 +57,24 @@ def load_classifier():
 @st.cache_resource
 def load_models():
 
-    regressor=joblib.load(
+    regressor = joblib.load(
         "random_forest_regressor.pkl"
     )
 
-    classifier=joblib.load(
+    classifier = joblib.load(
         "random_forest_classifier.pkl"
     )
 
-    kmeans=joblib.load(
+    kmeans = joblib.load(
         "kmeans_model.pkl"
     )
 
-    return regressor,classifier,kmeans
+    return regressor, classifier, kmeans
 
 
-kmeans_df=load_kmeans()
+kmeans_df = load_kmeans()
 
-regressor_df=load_regressor()
-
-classifier_df=load_classifier()
-
-regressor_model,classifier_model,kmeans_model=load_models()
+regressor_model, classifier_model, kmeans_model = load_models()
 
 # --------------------------------------------------
 # Sidebar
@@ -96,18 +82,17 @@ regressor_model,classifier_model,kmeans_model=load_models()
 
 st.sidebar.title("Navigation")
 
-page=st.sidebar.radio(
+page = st.sidebar.radio(
 
-"Select Module",
+    "Select Module",
 
-[
-"🏠 Home",
-"📊 Dashboard",
-"🤖 Random Forest Regressor",
-"🛒 Random Forest Classifier",
-"👥 Customer Segmentation",
-"📄 About"
-]
+    [
+        "🏠 Home",
+        "🤖 Random Forest Regressor",
+        "🛒 Random Forest Classifier",
+        "👥 Customer Segmentation",
+        "📄 About"
+    ]
 
 )
 
@@ -115,7 +100,7 @@ page=st.sidebar.radio(
 # HOME
 # ==========================================================
 
-if page=="🏠 Home":
+if page == "🏠 Home":
 
     st.title("🛒 Instacart Analytics & Machine Learning System")
 
@@ -151,94 +136,6 @@ Welcome to the end-to-end Data Science Project.
     )
 
 # ==========================================================
-# DASHBOARD
-# ==========================================================
-
-elif page == "📊 Dashboard":
-
-    st.title("📊 Business Dashboard")
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric(
-        "Total Customers",
-        kmeans_df["user_id"].nunique()
-    )
-
-    col2.metric(
-        "Total Orders",
-        int(kmeans_df["total_orders"].sum())
-    )
-
-    col3.metric(
-        "Total Products",
-        int(kmeans_df["total_products"].sum())
-    )
-
-    st.markdown("---")
-
-    c1, c2 = st.columns(2)
-
-    with c1:
-
-        fig = px.histogram(
-            kmeans_df,
-            x="total_orders",
-            nbins=30,
-            title="Customer Order Distribution"
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-    with c2:
-
-        fig = px.histogram(
-            kmeans_df,
-            x="total_products",
-            nbins=30,
-            title="Products Purchased Distribution"
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
-
-    st.markdown("---")
-
-    fig = px.scatter(
-
-        kmeans_df,
-
-        x="total_orders",
-
-        y="total_products",
-
-        color="total_reorders",
-
-        size="avg_days_between_orders",
-
-        title="Customer Behaviour Analysis"
-
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-    st.markdown("---")
-
-    st.subheader("Dataset Preview")
-
-    st.dataframe(
-        kmeans_df.head(20),
-        use_container_width=True
-    )
-# ==========================================================
 # RANDOM FOREST REGRESSOR
 # ==========================================================
 
@@ -270,7 +167,7 @@ elif page == "🤖 Random Forest Regressor":
 
         order_dow = st.selectbox(
             "Order Day of Week",
-            [0,1,2,3,4,5,6]
+            [0, 1, 2, 3, 4, 5, 6]
         )
 
         order_hour = st.slider(
@@ -283,10 +180,10 @@ elif page == "🤖 Random Forest Regressor":
     if st.button("Predict Next Order"):
 
         input_data = pd.DataFrame({
-            "user_id":[user_id],
-            "order_number":[order_number],
-            "order_dow":[order_dow],
-            "order_hour_of_day":[order_hour]
+            "user_id": [user_id],
+            "order_number": [order_number],
+            "order_dow": [order_dow],
+            "order_hour_of_day": [order_hour]
         })
 
         prediction = regressor_model.predict(input_data)
@@ -295,28 +192,6 @@ elif page == "🤖 Random Forest Regressor":
             f"Predicted Days Until Next Order: {prediction[0]:.2f} Days"
         )
 
-    st.markdown("---")
-
-    st.subheader("Regression Dataset Preview")
-
-    st.dataframe(
-        regressor_df.head(10),
-        use_container_width=True
-    )
-
-    st.markdown("---")
-
-    fig = px.histogram(
-        regressor_df,
-        x="days_since_prior_order",
-        nbins=30,
-        title="Distribution of Days Since Prior Order"
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
 # ==========================================================
 # RANDOM FOREST CLASSIFIER
 # ==========================================================
@@ -365,7 +240,7 @@ elif page == "🛒 Random Forest Classifier":
 
         order_dow = st.selectbox(
             "Order Day",
-            [0,1,2,3,4,5,6],
+            [0, 1, 2, 3, 4, 5, 6],
             key="clf_day"
         )
 
@@ -380,12 +255,12 @@ elif page == "🛒 Random Forest Classifier":
     if st.button("Predict Reorder"):
 
         input_data = pd.DataFrame({
-            "user_id":[user_id],
-            "product_id":[product_id],
-            "add_to_cart_order":[add_to_cart_order],
-            "order_number":[order_number],
-            "order_dow":[order_dow],
-            "order_hour_of_day":[order_hour]
+            "user_id": [user_id],
+            "product_id": [product_id],
+            "add_to_cart_order": [add_to_cart_order],
+            "order_number": [order_number],
+            "order_dow": [order_dow],
+            "order_hour_of_day": [order_hour]
         })
 
         prediction = classifier_model.predict(input_data)
@@ -401,36 +276,23 @@ elif page == "🛒 Random Forest Classifier":
             st.error("❌ Customer is unlikely to reorder this product.")
 
         st.write(
-            f"Prediction Confidence: {max(probability[0])*100:.2f}%"
+            f"Prediction Confidence: {max(probability[0]) * 100:.2f}%"
         )
 
     st.markdown("---")
 
-    st.subheader("Classifier Dataset Preview")
+    st.subheader("Feature Importance")
 
-    st.dataframe(
-        classifier_df.head(10),
-        use_container_width=True
-    )
-
-    st.markdown("---")
-
-    fig = px.histogram(
-        classifier_df,
-        x="reordered",
-        color="reordered",
-        title="Reordered vs Not Reordered"
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
+    # Feature names pulled from the trained model itself, so this no
+    # longer depends on classifier_dataset.csv being present.
+    feature_names = getattr(
+        classifier_model,
+        "feature_names_in_",
+        [f"Feature {i}" for i in range(len(classifier_model.feature_importances_))]
     )
 
     feature_importance = pd.DataFrame({
-        "Feature": classifier_df.drop(
-            columns=["reordered"]
-        ).columns,
+        "Feature": feature_names,
         "Importance": classifier_model.feature_importances_
     })
 
@@ -438,8 +300,6 @@ elif page == "🛒 Random Forest Classifier":
         by="Importance",
         ascending=False
     )
-
-    st.subheader("Feature Importance")
 
     fig2 = px.bar(
         feature_importance,
@@ -453,6 +313,7 @@ elif page == "🛒 Random Forest Classifier":
         fig2,
         use_container_width=True
     )
+
 # ==========================================================
 # CUSTOMER SEGMENTATION
 # ==========================================================
@@ -572,6 +433,7 @@ elif page == "👥 Customer Segmentation":
         else:
 
             st.error("Customer Not Found")
+
 # ==========================================================
 # ABOUT PROJECT
 # ==========================================================
