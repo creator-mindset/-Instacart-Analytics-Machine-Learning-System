@@ -3,10 +3,23 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import joblib
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# --------------------------------------------------
-# Page Config
-# --------------------------------------------------
+
+def resolve_path(filename):
+    """Return the full path to a data/model file, or raise a clear
+    Streamlit error (instead of a raw traceback) if it's missing."""
+    path = os.path.join(BASE_DIR, filename)
+    if not os.path.exists(path):
+        st.error(
+            f"Required file `{filename}` was not found next to app.py "
+            f"(looked in: {BASE_DIR}). Make sure it's committed to the "
+            f"repo, the filename/case matches exactly, and it isn't "
+            f"excluded via .gitignore or stuck in Git LFS."
+        )
+        st.stop()
+    return path
 
 st.set_page_config(
     page_title="Instacart Analytics & Machine Learning System",
@@ -48,7 +61,7 @@ h1{
 
 @st.cache_data
 def load_kmeans():
-    return pd.read_csv("K-means Dataset.csv")
+    return pd.read_csv(resolve_path("K-means Dataset.csv"))
 
 # --------------------------------------------------
 # Load Models
@@ -58,15 +71,15 @@ def load_kmeans():
 def load_models():
 
     regressor = joblib.load(
-        "random_forest_regressor.pkl"
+        resolve_path("random_forest_regressor.pkl")
     )
 
     classifier = joblib.load(
-        "random_forest_classifier.pkl"
+        resolve_path("random_forest_classifier.pkl")
     )
 
     kmeans = joblib.load(
-        "kmeans_model.pkl"
+        resolve_path("kmeans_model.pkl")
     )
 
     return regressor, classifier, kmeans
