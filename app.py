@@ -4,9 +4,9 @@ import streamlit as st
 
 st.set_page_config(page_title="Instacart Analysis and ML System", layout="wide")
 
-regressor = joblib.load("models/random_forest_regressor.pkl")
-classifier = joblib.load("models/random_forest_classifier.pkl")
-kmeans = joblib.load("models/kmeans_model.pkl")
+regressor = joblib.load("random_forest_regressor.pkl")
+classifier = joblib.load("random_forest_classifier.pkl")
+kmeans = joblib.load("kmeans_model.pkl")
 
 st.title("Instacart Analysis and Machine Learning System")
 
