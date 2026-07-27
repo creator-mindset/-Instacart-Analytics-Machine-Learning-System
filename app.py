@@ -22,19 +22,11 @@ def resolve_path(filename):
         st.stop()
     return path
 
-# --------------------------------------------------
-# Page Config
-# --------------------------------------------------
-
 st.set_page_config(
     page_title="Instacart Analytics & Machine Learning System",
     page_icon="🛒",
     layout="wide"
 )
-
-# --------------------------------------------------
-# Custom CSS
-# --------------------------------------------------
 
 st.markdown("""
 <style>
@@ -56,21 +48,9 @@ h1{
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------
-# Load Data
-# --------------------------------------------------
-# NOTE: only kmeans_df is kept — it's the source data Segmentation
-# clusters and searches against, not just a preview table.
-# regressor_dataset.csv and classifier_dataset.csv are no longer
-# loaded since they were only used for dataset previews/histograms.
-
 @st.cache_data
 def load_kmeans():
     return pd.read_csv(resolve_path("K-means Dataset.csv"))
-
-# --------------------------------------------------
-# Load Models
-# --------------------------------------------------
 
 @st.cache_resource
 def load_models():
@@ -98,10 +78,6 @@ kmeans_df = load_kmeans()
 
 regressor_model, classifier_model, kmeans_model, kmeans_scaler = load_models()
 
-# --------------------------------------------------
-# Sidebar
-# --------------------------------------------------
-
 st.sidebar.title("Navigation")
 
 page = st.sidebar.radio(
@@ -118,9 +94,6 @@ page = st.sidebar.radio(
 
 )
 
-# ==========================================================
-# HOME
-# ==========================================================
 
 if page == "🏠 Home":
 
@@ -151,6 +124,12 @@ Welcome to the end-to-end Data Science Project.
 ✔ Interactive Dashboard
 
 """)
+
+    st.image(
+        "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=1200",
+        use_container_width=True
+    )
+
 
 elif page == "🤖 Random Forest Regressor":
 
@@ -204,7 +183,6 @@ elif page == "🤖 Random Forest Regressor":
         st.success(
             f"Predicted Days Until Next Order: {prediction[0]:.2f} Days"
         )
-
 
 elif page == "🛒 Random Forest Classifier":
 
@@ -332,6 +310,10 @@ elif page == "👥 Customer Segmentation":
 
     st.markdown("---")
 
+    # The KMeans model was trained on *scaled* features (its
+    # cluster_centers_ are in scaled space), so raw values must be
+    # passed through scaler.pkl first. feature_names_in_ preserves the
+    # exact column order the scaler was fit on.
     feature_cols = list(kmeans_scaler.feature_names_in_)
 
     missing_cols = set(feature_cols) - set(kmeans_df.columns)
@@ -571,10 +553,6 @@ Streamlit Dashboard
     st.success("End-to-End Data Science Project Successfully Developed ✅")
 
 
-# ==========================================================
-# FOOTER
-# ==========================================================
-
 st.markdown("---")
 
 st.markdown(
@@ -585,10 +563,6 @@ Made with using
 
 <b>Python | PostgreSQL | SQL | Scikit-Learn | Streamlit</b>
 
-</div>
-""",
-unsafe_allow_html=True
-)
 </div>
 """,
 unsafe_allow_html=True
