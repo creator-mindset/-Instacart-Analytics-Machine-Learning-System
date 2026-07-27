@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import joblib
-import os
 
-# -----------------------------
-# Page Configuration
-# -----------------------------
+# --------------------------------------------------
+# Page Config
+# --------------------------------------------------
 
 st.set_page_config(
     page_title="Instacart Analytics & Machine Learning System",
@@ -14,65 +15,114 @@ st.set_page_config(
     layout="wide"
 )
 
-# -----------------------------
-# Helpers
-# -----------------------------
+# --------------------------------------------------
+# Custom CSS
+# --------------------------------------------------
+
+st.markdown("""
+<style>
+
+[data-testid="stSidebar"]{
+    background-color:#F4F6F7;
+}
+
+.metric-container{
+    background:#ffffff;
+    padding:15px;
+    border-radius:10px;
+}
+
+h1{
+    color:#1F618D;
+}
+
+</style>
+""",unsafe_allow_html=True)
+
+# --------------------------------------------------
+# Load Data
+# --------------------------------------------------
 
 @st.cache_data
-def load_csv(path):
-    if not os.path.exists(path):
-        st.error(f"Data file not found: {path}. Make sure it's in the app's working directory.")
-        st.stop()
-    return pd.read_csv(path)
+def load_kmeans():
 
+    return pd.read_csv("K-means Dataset.csv")
+
+
+@st.cache_data
+def load_regressor():
+
+    return pd.read_csv("regressor_dataset.csv")
+
+
+@st.cache_data
+def load_classifier():
+
+    return pd.read_csv("classifier_dataset.csv")
+
+# --------------------------------------------------
+# Load Models
+# --------------------------------------------------
 
 @st.cache_resource
-def load_model(path):
-    if not os.path.exists(path):
-        st.error(f"Model file not found: {path}. Make sure it's in the app's working directory.")
-        st.stop()
-    return joblib.load(path)
+def load_models():
+
+    regressor=joblib.load(
+        "random_forest_regressor.pkl"
+    )
+
+    classifier=joblib.load(
+        "random_forest_classifier.pkl"
+    )
+
+    kmeans=joblib.load(
+        "kmeans_model.pkl"
+    )
+
+    return regressor,classifier,kmeans
 
 
-# -----------------------------
-# Title
-# -----------------------------
+kmeans_df=load_kmeans()
 
-st.title("🛒 Instacart Analytics & Machine Learning System")
+regressor_df=load_regressor()
 
-st.markdown("---")
+classifier_df=load_classifier()
 
-# -----------------------------
+regressor_model,classifier_model,kmeans_model=load_models()
+
+# --------------------------------------------------
 # Sidebar
-# -----------------------------
+# --------------------------------------------------
 
 st.sidebar.title("Navigation")
 
-page = st.sidebar.radio(
-    "Select Module",
-    [
-        "🏠 Home",
-        "📊 Dashboard",
-        "🤖 Random Forest Regressor",
-        "🛒 Random Forest Classifier",
-        "👥 Customer Segmentation",
-        "ℹ About Project"
-    ]
+page=st.sidebar.radio(
+
+"Select Module",
+
+[
+"🏠 Home",
+"📊 Dashboard",
+"🤖 Random Forest Regressor",
+"🛒 Random Forest Classifier",
+"👥 Customer Segmentation",
+"📄 About"
+]
+
 )
 
-# ===================================================
-# HOME PAGE
-# ===================================================
+# ==========================================================
+# HOME
+# ==========================================================
 
-if page == "🏠 Home":
+if page=="🏠 Home":
 
-    st.header("Project Overview")
+    st.title("🛒 Instacart Analytics & Machine Learning System")
 
     st.write("""
-This project analyzes customer purchasing behaviour using the
-Instacart Market Basket Analysis Dataset.
+Welcome to the end-to-end Data Science Project.
 
-### Technologies Used
+### Technologies
 
 - PostgreSQL
 - SQL
@@ -81,236 +131,345 @@ Instacart Market Basket Analysis Dataset.
 - Scikit-Learn
 - Random Forest
 - K-Means
-- Plotly
 - Streamlit
 
-### Machine Learning Models
+### Project Modules
 
-- Random Forest Regressor
-- Random Forest Classifier
-- K-Means Clustering
+✔ Business Analytics
 
-### Business Objectives
-
-✔ Customer Behaviour Analysis
-
-✔ Product Reorder Prediction
+✔ Machine Learning
 
 ✔ Customer Segmentation
 
-✔ Business Intelligence Dashboard
+✔ Interactive Dashboard
+
 """)
 
-# ===================================================
+    st.image(
+        "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=1200",
+        use_container_width=True
+    )
+
+# ==========================================================
 # DASHBOARD
-# ===================================================
+# ==========================================================
 
 elif page == "📊 Dashboard":
 
-    st.header("Business Dashboard")
-
-    df = load_csv("customer_segments.csv")
-
-    required_cols = {"total_orders", "total_products"}
-    missing = required_cols - set(df.columns)
-    if missing:
-        st.error(f"customer_segments.csv is missing expected columns: {missing}")
-        st.stop()
+    st.title("📊 Business Dashboard")
 
     col1, col2, col3 = st.columns(3)
 
     col1.metric(
         "Total Customers",
-        len(df)
+        kmeans_df["user_id"].nunique()
     )
 
     col2.metric(
-        "Average Orders",
-        round(df["total_orders"].mean(), 2)
+        "Total Orders",
+        int(kmeans_df["total_orders"].sum())
     )
 
     col3.metric(
-        "Average Products",
-        round(df["total_products"].mean(), 2)
+        "Total Products",
+        int(kmeans_df["total_products"].sum())
+    )
+
+    st.markdown("---")
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+
+        fig = px.histogram(
+            kmeans_df,
+            x="total_orders",
+            nbins=30,
+            title="Customer Order Distribution"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    with c2:
+
+        fig = px.histogram(
+            kmeans_df,
+            x="total_products",
+            nbins=30,
+            title="Products Purchased Distribution"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    st.markdown("---")
+
+    fig = px.scatter(
+
+        kmeans_df,
+
+        x="total_orders",
+
+        y="total_products",
+
+        color="total_reorders",
+
+        size="avg_days_between_orders",
+
+        title="Customer Behaviour Analysis"
+
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    st.markdown("---")
+
+    st.subheader("Dataset Preview")
+
+    st.dataframe(
+        kmeans_df.head(20),
+        use_container_width=True
+    )
+# ==========================================================
+# RANDOM FOREST REGRESSOR
+# ==========================================================
+
+elif page == "🤖 Random Forest Regressor":
+
+    st.title("🤖 Random Forest Regressor")
+
+    st.write("Predict the expected number of days until the customer's next order.")
+
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        user_id = st.number_input(
+            "User ID",
+            min_value=1,
+            step=1
+        )
+
+        order_number = st.number_input(
+            "Order Number",
+            min_value=1,
+            step=1
+        )
+
+    with col2:
+
+        order_dow = st.selectbox(
+            "Order Day of Week",
+            [0,1,2,3,4,5,6]
+        )
+
+        order_hour = st.slider(
+            "Order Hour",
+            0,
+            23,
+            12
+        )
+
+    if st.button("Predict Next Order"):
+
+        input_data = pd.DataFrame({
+            "user_id":[user_id],
+            "order_number":[order_number],
+            "order_dow":[order_dow],
+            "order_hour_of_day":[order_hour]
+        })
+
+        prediction = regressor_model.predict(input_data)
+
+        st.success(
+            f"Predicted Days Until Next Order: {prediction[0]:.2f} Days"
+        )
+
+    st.markdown("---")
+
+    st.subheader("Regression Dataset Preview")
+
+    st.dataframe(
+        regressor_df.head(10),
+        use_container_width=True
     )
 
     st.markdown("---")
 
     fig = px.histogram(
-        df,
-        x="total_orders",
+        regressor_df,
+        x="days_since_prior_order",
         nbins=30,
-        title="Distribution of Customer Orders"
+        title="Distribution of Days Since Prior Order"
     )
 
-    st.plotly_chart(fig, use_container_width=True)
-
-    fig = px.scatter(
-        df,
-        x="total_orders",
-        y="total_products",
-        title="Orders vs Products"
+    st.plotly_chart(
+        fig,
+        use_container_width=True
     )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.subheader("Customer Dataset")
-
-    st.dataframe(df.head(20))
-
-# ===================================================
-# RANDOM FOREST REGRESSOR
-# ===================================================
-
-elif page == "🤖 Random Forest Regressor":
-
-    st.header("Random Forest Regressor")
-
-    st.write(
-        "Predict the number of days until the customer's next order."
-    )
-
-    model = load_model("random_forest_regressor.pkl")
-
-    user_id = st.number_input(
-        "User ID",
-        min_value=1,
-        value=1
-    )
-
-    order_number = st.number_input(
-        "Order Number",
-        min_value=1,
-        value=1
-    )
-
-    order_dow = st.selectbox(
-        "Order Day",
-        [0, 1, 2, 3, 4, 5, 6]
-    )
-
-    order_hour = st.slider(
-        "Order Hour",
-        0,
-        23,
-        12
-    )
-
-    if st.button("Predict Next Order"):
-
-        input_df = pd.DataFrame(
-            [[user_id, order_number, order_dow, order_hour]],
-            columns=["user_id", "order_number", "order_dow", "order_hour"]
-        )
-
-        try:
-            prediction = model.predict(input_df)
-            st.success(
-                f"Expected Next Order After {prediction[0]:.2f} Days"
-            )
-        except Exception as e:
-            st.error(f"Prediction failed: {e}")
-
-# ===================================================
+# ==========================================================
 # RANDOM FOREST CLASSIFIER
-# ===================================================
+# ==========================================================
 
 elif page == "🛒 Random Forest Classifier":
 
-    st.header("Random Forest Classifier")
+    st.title("🛒 Random Forest Classifier")
 
-    st.write(
-        "Predict whether the customer will reorder the product."
-    )
+    st.write("Predict whether a customer will reorder a product.")
 
-    model = load_model("random_forest_classifier.pkl")
+    st.markdown("---")
 
-    user_id = st.number_input(
-        "User ID ",
-        min_value=1,
-        value=1
-    )
+    col1, col2 = st.columns(2)
 
-    product_id = st.number_input(
-        "Product ID",
-        min_value=1,
-        value=1
-    )
+    with col1:
 
-    add_to_cart = st.number_input(
-        "Add To Cart Order",
-        min_value=1,
-        value=1
-    )
+        user_id = st.number_input(
+            "User ID",
+            min_value=1,
+            step=1,
+            key="clf_user"
+        )
 
-    order_number = st.number_input(
-        "Order Number ",
-        min_value=1,
-        value=1
-    )
+        product_id = st.number_input(
+            "Product ID",
+            min_value=1,
+            step=1,
+            key="clf_product"
+        )
 
-    order_dow = st.selectbox(
-        "Order Day ",
-        [0, 1, 2, 3, 4, 5, 6]
-    )
+        add_to_cart_order = st.number_input(
+            "Add To Cart Position",
+            min_value=1,
+            step=1,
+            key="clf_cart"
+        )
 
-    order_hour = st.slider(
-        "Order Hour ",
-        0,
-        23,
-        12
-    )
+    with col2:
+
+        order_number = st.number_input(
+            "Order Number",
+            min_value=1,
+            step=1,
+            key="clf_order"
+        )
+
+        order_dow = st.selectbox(
+            "Order Day",
+            [0,1,2,3,4,5,6],
+            key="clf_day"
+        )
+
+        order_hour = st.slider(
+            "Order Hour",
+            0,
+            23,
+            12,
+            key="clf_hour"
+        )
 
     if st.button("Predict Reorder"):
 
-        input_df = pd.DataFrame(
-            [[user_id, product_id, add_to_cart, order_number, order_dow, order_hour]],
-            columns=["user_id", "product_id", "add_to_cart_order", "order_number", "order_dow", "order_hour"]
+        input_data = pd.DataFrame({
+            "user_id":[user_id],
+            "product_id":[product_id],
+            "add_to_cart_order":[add_to_cart_order],
+            "order_number":[order_number],
+            "order_dow":[order_dow],
+            "order_hour_of_day":[order_hour]
+        })
+
+        prediction = classifier_model.predict(input_data)
+
+        probability = classifier_model.predict_proba(input_data)
+
+        if prediction[0] == 1:
+
+            st.success("✅ Customer is likely to reorder this product.")
+
+        else:
+
+            st.error("❌ Customer is unlikely to reorder this product.")
+
+        st.write(
+            f"Prediction Confidence: {max(probability[0])*100:.2f}%"
         )
 
-        try:
-            prediction = model.predict(input_df)
+    st.markdown("---")
 
-            if prediction[0] == 1:
-                st.success(
-                    "Customer is likely to reorder this product."
-                )
-            else:
-                st.error(
-                    "Customer is unlikely to reorder this product."
-                )
-        except Exception as e:
-            st.error(f"Prediction failed: {e}")
+    st.subheader("Classifier Dataset Preview")
 
-# ===================================================
+    st.dataframe(
+        classifier_df.head(10),
+        use_container_width=True
+    )
+
+    st.markdown("---")
+
+    fig = px.histogram(
+        classifier_df,
+        x="reordered",
+        color="reordered",
+        title="Reordered vs Not Reordered"
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    feature_importance = pd.DataFrame({
+        "Feature": classifier_df.drop(
+            columns=["reordered"]
+        ).columns,
+        "Importance": classifier_model.feature_importances_
+    })
+
+    feature_importance = feature_importance.sort_values(
+        by="Importance",
+        ascending=False
+    )
+
+    st.subheader("Feature Importance")
+
+    fig2 = px.bar(
+        feature_importance,
+        x="Importance",
+        y="Feature",
+        orientation="h",
+        title="Random Forest Feature Importance"
+    )
+
+    st.plotly_chart(
+        fig2,
+        use_container_width=True
+    )
+# ==========================================================
 # CUSTOMER SEGMENTATION
-# ===================================================
+# ==========================================================
 
 elif page == "👥 Customer Segmentation":
 
-    st.header("Customer Segmentation using K-Means")
+    st.title("👥 Customer Segmentation")
 
-    df = load_csv("customer_segments.csv")
-    model = load_model("kmeans_model.pkl")
+    st.write("Customer Segmentation using K-Means Clustering")
 
-    required_cols = {"total_orders", "total_products"}
-    missing = required_cols - set(df.columns)
-    if missing:
-        st.error(f"customer_segments.csv is missing expected columns: {missing}")
-        st.stop()
+    st.markdown("---")
 
-    # BUG FIX: model.labels_ reflects the training data the KMeans model
-    # was originally fit on, not this df. It can mismatch in length or
-    # simply mislabel rows. Use model.predict() on the actual feature
-    # columns instead so clusters are computed for the data being shown.
-    feature_cols = ["total_orders", "total_products"]
-    try:
-        df["Cluster"] = model.predict(df[feature_cols])
-    except Exception as e:
-        st.error(f"Clustering prediction failed: {e}")
-        st.stop()
+    features = kmeans_df.drop(columns=["user_id"])
 
-    segment_map = {
+    kmeans_df["Cluster"] = kmeans_model.predict(features)
+
+    cluster_names = {
         0: "Loyal Customers",
         1: "High Value Customers",
         2: "Occasional Buyers",
@@ -318,97 +477,239 @@ elif page == "👥 Customer Segmentation":
         4: "Bulk Buyers"
     }
 
-    df["Segment"] = df["Cluster"].map(segment_map).fillna("Unclassified")
+    kmeans_df["Segment"] = kmeans_df["Cluster"].map(cluster_names)
 
-    st.subheader("Customer Segments")
+    st.subheader("Customer Segmentation Dataset")
 
-    st.dataframe(df.head(20))
-
-    fig = px.scatter(
-        df,
-        x="total_orders",
-        y="total_products",
-        color="Segment",
-        hover_data=["user_id"],
-        title="Customer Segmentation"
+    st.dataframe(
+        kmeans_df.head(20),
+        use_container_width=True
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("---")
 
-    st.subheader("Segment Distribution")
+    st.subheader("Customer Segment Distribution")
 
-    fig2 = px.pie(
-        df,
+    pie = px.pie(
+        kmeans_df,
         names="Segment",
-        title="Customer Distribution"
+        title="Customer Segments"
     )
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(
+        pie,
+        use_container_width=True
+    )
 
+    st.markdown("---")
 
-# ===================================================
+    st.subheader("Customer Behaviour")
+
+    scatter = px.scatter(
+
+        kmeans_df,
+
+        x="total_orders",
+
+        y="total_products",
+
+        color="Segment",
+
+        size="total_reorders",
+
+        hover_data=["user_id"],
+
+        title="Customer Segmentation Analysis"
+
+    )
+
+    st.plotly_chart(
+        scatter,
+        use_container_width=True
+    )
+
+    st.markdown("---")
+
+    st.subheader("Average Metrics by Segment")
+
+    summary = kmeans_df.groupby("Segment")[
+        [
+            "total_orders",
+            "total_products",
+            "avg_cart_position",
+            "avg_days_between_orders",
+            "total_reorders"
+        ]
+    ].mean()
+
+    st.dataframe(
+        summary,
+        use_container_width=True
+    )
+
+    st.markdown("---")
+
+    st.subheader("Search Customer")
+
+    search_user = st.number_input(
+        "Enter User ID",
+        min_value=1,
+        step=1
+    )
+
+    if st.button("Search Customer"):
+
+        result = kmeans_df[
+            kmeans_df["user_id"] == search_user
+        ]
+
+        if len(result) > 0:
+
+            st.success("Customer Found")
+
+            st.dataframe(result)
+
+        else:
+
+            st.error("Customer Not Found")
+# ==========================================================
 # ABOUT PROJECT
-# ===================================================
+# ==========================================================
 
-elif page == "ℹ About Project":
+elif page == "📄 About":
 
-    st.header("About Project")
+    st.title("📄 About This Project")
 
     st.markdown("""
-## Instacart Analytics & Machine Learning System
+# Instacart Analytics & Machine Learning System
 
-### Dataset
-Instacart Market Basket Analysis Dataset
+This is an End-to-End Data Science Project built using the
+Instacart Market Basket Analysis Dataset.
 
-### Database
+The project combines SQL, Machine Learning, Data Analytics,
+Business Intelligence and Interactive Visualization.
+
+---
+""")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.subheader("🛠 Technologies")
+
+        st.markdown("""
 - PostgreSQL
-
-### SQL Concepts
-- JOIN
-- GROUP BY
-- HAVING
-- CTE
-- Window Functions
-- Business Analytics
-
-### Machine Learning
-- Random Forest Regressor
-- Random Forest Classifier
-- K-Means Clustering
-
-### Python Libraries
+- SQL
+- Python
 - Pandas
 - NumPy
 - Scikit-Learn
+- Random Forest
+- K-Means
 - Plotly
-- Joblib
 - Streamlit
+""")
 
-### Business Objectives
+    with col2:
 
-✔ Customer Analytics
+        st.subheader("📚 Machine Learning")
 
-✔ Product Analytics
+        st.markdown("""
+- Random Forest Regressor
+- Random Forest Classifier
+- K-Means Clustering
+""")
 
-✔ Customer Segmentation
+    st.markdown("---")
 
-✔ Reorder Prediction
+    st.subheader("📊 Business Objectives")
+
+    st.markdown("""
+✔ Customer Behaviour Analysis
+
+✔ Product Reorder Prediction
 
 ✔ Next Order Prediction
 
-✔ Interactive Dashboard
+✔ Customer Segmentation
 
----
+✔ Business Intelligence Dashboard
 
-Developed by Prajjwal Bisht
+✔ Business Insights using SQL
 """)
 
-# ===================================================
+    st.markdown("---")
+
+    st.subheader("📈 Dataset Statistics")
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "Customers",
+        kmeans_df["user_id"].nunique()
+    )
+
+    c2.metric(
+        "Orders",
+        int(kmeans_df["total_orders"].sum())
+    )
+
+    c3.metric(
+        "Products",
+        int(kmeans_df["total_products"].sum())
+    )
+
+    st.markdown("---")
+
+    st.subheader("👨‍💻 Project Workflow")
+
+    st.markdown("""
+
+PostgreSQL Database
+
+⬇
+
+Advanced SQL Queries
+
+⬇
+
+Feature Engineering
+
+⬇
+
+Random Forest Models
+
+⬇
+
+K-Means Clustering
+
+⬇
+
+Streamlit Dashboard
+
+""")
+
+    st.markdown("---")
+
+    st.success("End-to-End Data Science Project Successfully Developed ✅")
+
+
+# ==========================================================
 # FOOTER
-# ===================================================
+# ==========================================================
 
 st.markdown("---")
 
-st.caption(
-    "Instacart Analytics & Machine Learning System | Data Science Portfolio Project"
+st.markdown(
+"""
+<div style='text-align:center;'>
+
+Made with ❤️ using
+
+<b>Python | PostgreSQL | SQL | Scikit-Learn | Streamlit</b>
+
+</div>
+""",
+unsafe_allow_html=True
 )
