@@ -8,6 +8,13 @@ regressor = joblib.load("random_forest_regressor.pkl")
 classifier = joblib.load("random_forest_classifier.pkl")
 kmeans = joblib.load("kmeans_model.pkl")
 
+
+def get_features(model):
+    if hasattr(model, "feature_names_in_"):
+        return list(model.feature_names_in_)
+    return [f"feature_{i+1}" for i in range(model.n_features_in_)]
+
+
 st.title("Instacart Analysis and Machine Learning System")
 
 tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Regressor", "Classifier", "KMeans"])
@@ -22,7 +29,7 @@ with tab1:
 
 with tab2:
     st.header("Random Forest Regressor")
-    features = regressor.feature_names_in_
+    features = get_features(regressor)
     inputs = []
     for f in features:
         inputs.append(st.number_input(f, value=0.0, key="reg_" + f))
@@ -33,7 +40,7 @@ with tab2:
 
 with tab3:
     st.header("Random Forest Classifier")
-    features = classifier.feature_names_in_
+    features = get_features(classifier)
     inputs = []
     for f in features:
         inputs.append(st.number_input(f, value=0.0, key="clf_" + f))
@@ -44,7 +51,7 @@ with tab3:
 
 with tab4:
     st.header("KMeans Clustering")
-    features = kmeans.feature_names_in_
+    features = get_features(kmeans)
     inputs = []
     for f in features:
         inputs.append(st.number_input(f, value=0.0, key="km_" + f))
