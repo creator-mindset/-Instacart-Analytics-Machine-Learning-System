@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import joblib
+import os
 
 # -----------------------------
 # Page Configuration
@@ -12,6 +13,26 @@ st.set_page_config(
     page_icon="🛒",
     layout="wide"
 )
+
+# -----------------------------
+# Helpers
+# -----------------------------
+
+@st.cache_data
+def load_csv(path):
+    if not os.path.exists(path):
+        st.error(f"Data file not found: {path}. Make sure it's in the app's working directory.")
+        st.stop()
+    return pd.read_csv(path)
+
+
+@st.cache_resource
+def load_model(path):
+    if not os.path.exists(path):
+        st.error(f"Model file not found: {path}. Make sure it's in the app's working directory.")
+        st.stop()
+    return joblib.load(path)
+
 
 # -----------------------------
 # Title
@@ -88,7 +109,13 @@ elif page == "📊 Dashboard":
 
     st.header("Business Dashboard")
 
-    df = pd.read_csv("customer_segments.csv")
+    df = load_csv("customer_segments.csv")
+
+    required_cols = {"total_orders", "total_products"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        st.error(f"customer_segments.csv is missing expected columns: {missing}")
+        st.stop()
 
     col1, col2, col3 = st.columns(3)
 
@@ -143,7 +170,7 @@ elif page == "🤖 Random Forest Regressor":
         "Predict the number of days until the customer's next order."
     )
 
-    model = joblib.load("random_forest_regressor.pkl")
+    model = load_model("random_forest_regressor.pkl")
 
     user_id = st.number_input(
         "User ID",
@@ -159,7 +186,7 @@ elif page == "🤖 Random Forest Regressor":
 
     order_dow = st.selectbox(
         "Order Day",
-        [0,1,2,3,4,5,6]
+        [0, 1, 2, 3, 4, 5, 6]
     )
 
     order_hour = st.slider(
@@ -171,18 +198,18 @@ elif page == "🤖 Random Forest Regressor":
 
     if st.button("Predict Next Order"):
 
-        prediction = model.predict(
-            [[
-                user_id,
-                order_number,
-                order_dow,
-                order_hour
-            ]]
+        input_df = pd.DataFrame(
+            [[user_id, order_number, order_dow, order_hour]],
+            columns=["user_id", "order_number", "order_dow", "order_hour"]
         )
 
-        st.success(
-            f"Expected Next Order After {prediction[0]:.2f} Days"
-        )
+        try:
+            prediction = model.predict(input_df)
+            st.success(
+                f"Expected Next Order After {prediction[0]:.2f} Days"
+            )
+        except Exception as e:
+            st.error(f"Prediction failed: {e}")
 
 # ===================================================
 # RANDOM FOREST CLASSIFIER
@@ -196,7 +223,7 @@ elif page == "🛒 Random Forest Classifier":
         "Predict whether the customer will reorder the product."
     )
 
-    model = joblib.load("random_forest_classifier.pkl")
+    model = load_model("random_forest_classifier.pkl")
 
     user_id = st.number_input(
         "User ID ",
@@ -224,7 +251,7 @@ elif page == "🛒 Random Forest Classifier":
 
     order_dow = st.selectbox(
         "Order Day ",
-        [0,1,2,3,4,5,6]
+        [0, 1, 2, 3, 4, 5, 6]
     )
 
     order_hour = st.slider(
@@ -236,28 +263,24 @@ elif page == "🛒 Random Forest Classifier":
 
     if st.button("Predict Reorder"):
 
-        prediction = model.predict(
-            [[
-                user_id,
-                product_id,
-                add_to_cart,
-                order_number,
-                order_dow,
-                order_hour
-            ]]
+        input_df = pd.DataFrame(
+            [[user_id, product_id, add_to_cart, order_number, order_dow, order_hour]],
+            columns=["user_id", "product_id", "add_to_cart_order", "order_number", "order_dow", "order_hour"]
         )
 
-        if prediction[0] == 1:
+        try:
+            prediction = model.predict(input_df)
 
-            st.success(
-                "Customer is likely to reorder this product."
-            )
-
-        else:
-
-            st.error(
-                "Customer is unlikely to reorder this product."
-            )
+            if prediction[0] == 1:
+                st.success(
+                    "Customer is likely to reorder this product."
+                )
+            else:
+                st.error(
+                    "Customer is unlikely to reorder this product."
+                )
+        except Exception as e:
+            st.error(f"Prediction failed: {e}")
 
 # ===================================================
 # CUSTOMER SEGMENTATION
@@ -267,11 +290,25 @@ elif page == "👥 Customer Segmentation":
 
     st.header("Customer Segmentation using K-Means")
 
-    df = pd.read_csv("customer_segments.csv")
+    df = load_csv("customer_segments.csv")
+    model = load_model("kmeans_model.pkl")
 
-    model = joblib.load("kmeans_model.pkl")
+    required_cols = {"total_orders", "total_products"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        st.error(f"customer_segments.csv is missing expected columns: {missing}")
+        st.stop()
 
-    df["Cluster"] = model.labels_
+    # BUG FIX: model.labels_ reflects the training data the KMeans model
+    # was originally fit on, not this df. It can mismatch in length or
+    # simply mislabel rows. Use model.predict() on the actual feature
+    # columns instead so clusters are computed for the data being shown.
+    feature_cols = ["total_orders", "total_products"]
+    try:
+        df["Cluster"] = model.predict(df[feature_cols])
+    except Exception as e:
+        st.error(f"Clustering prediction failed: {e}")
+        st.stop()
 
     segment_map = {
         0: "Loyal Customers",
@@ -281,7 +318,7 @@ elif page == "👥 Customer Segmentation":
         4: "Bulk Buyers"
     }
 
-    df["Segment"] = df["Cluster"].map(segment_map)
+    df["Segment"] = df["Cluster"].map(segment_map).fillna("Unclassified")
 
     st.subheader("Customer Segments")
 
