@@ -80,8 +80,8 @@ Business insights that are generated:
 - Sunday receives the maximum orders
 - Banana,Bag of Organic Bananas and Organic Strawberries are most reordered products
 - produce department has the highest number of ordered products with 9479291 orders
--Largest basket size ever purchased by order_id 1564244 by a basket size of 145 products
--24.60 % customers have more than 20 orders
+- Largest basket size ever purchased by order_id 1564244 by a basket size of 145 products
+- 24.60 % customers have more than 20 orders
 
 ---
 
@@ -109,6 +109,15 @@ Target Variable:
 
 ### K-Means Clustering
 
+---
+
+## 📉 Cluster Selection using Elbow Method
+
+Before training the K-Means model, the **Elbow Method** was used to determine the optimal number of clusters by analyzing the Within-Cluster Sum of Squares (WCSS) across different values of **K**.
+The elbow point was observed at **K = 5**, indicating that five clusters provide the best balance between model complexity and clustering performance.
+This approach helped create meaningful customer segments based on purchasing behavior while minimizing within-cluster variance.
+
+---
 Segments customers into different purchasing behavior groups using:
 
 - Total Orders
