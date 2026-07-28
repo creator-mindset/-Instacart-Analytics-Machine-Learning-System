@@ -112,7 +112,7 @@ Target Variable:
 ---
 
 ## 📉 Cluster Selection using Elbow Method
-
+![Elbow Method Graph](https://github.com/creator-mindset/-Instacart-Analytics-Machine-Learning-System/blob/main/Elbow%20Method%20Graph.png?raw=true)
 Before training the K-Means model, the **Elbow Method** was used to determine the optimal number of clusters by analyzing the Within-Cluster Sum of Squares (WCSS) across different values of **K**.
 The elbow point was observed at **K = 5**, indicating that five clusters provide the best balance between model complexity and clustering performance.
 This approach helped create meaningful customer segments based on purchasing behavior while minimizing within-cluster variance.
