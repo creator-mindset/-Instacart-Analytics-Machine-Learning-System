@@ -136,7 +136,7 @@ Segments customers into different purchasing behavior groups using:
 ---
 
 ## 📈 Streamlit Dashboard
-
+![Streamlit Dashboard](https://github.com/creator-mindset/-Instacart-Analytics-Machine-Learning-System/blob/main/Streamlit%20Dashboard%20Image.png?raw=true)
 The interactive dashboard includes:
 
 - Home Page
