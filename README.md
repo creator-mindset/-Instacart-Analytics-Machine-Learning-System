@@ -91,6 +91,10 @@ Business insights that are generated:
 
 Predicts the expected number of days until the customer's next order.
 
+Model Performance:
+
+Mean Squared Error (MSE): 71.75
+
 Target Variable:
 
 - days_since_prior_order
@@ -100,6 +104,9 @@ Target Variable:
 ### Random Forest Classifier
 
 Predicts whether a customer is likely to reorder a product.
+
+Model Performance:
+Accuracy score:0.71
 
 Target Variable:
 
@@ -129,7 +136,7 @@ Segments customers into different purchasing behavior groups using:
 ---
 
 ## 📈 Streamlit Dashboard
-
+![Elbow Method Graph](https://github.com/creator-mindset/-Instacart-Analytics-Machine-Learning-System/blob/main/Elbow%20Method%20Graph.png?raw=true)
 The interactive dashboard includes:
 
 - Home Page
