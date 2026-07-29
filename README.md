@@ -136,7 +136,7 @@ Segments customers into different purchasing behavior groups using:
 ---
 
 ## 📈 Streamlit Dashboard
-![Elbow Method Graph](blob:https://tools.kommodo.ai/7ebf5d2c-f1c2-483d-9171-71d731026d9f)
+
 The interactive dashboard includes:
 
 - Home Page
